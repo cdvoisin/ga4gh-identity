@@ -1,0 +1,288 @@
+// Copyright 2018 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+// Package dam provides protocol buffer versions of the DAM API, allowing
+// end points to receive requests and returns responses using these messages.
+package dam.v1;
+
+message DamConfig {
+  string version = 1;
+  int64 revision = 2;
+  double commit_time = 3;
+  map<string, TrustedPassportIssuer> trusted_passport_issuers = 4;
+  map<string, TrustedClaim> trusted_claims = 5;
+  map<string, Rule> rules = 6;
+  map<string, Resource> resources = 7;
+  map<string, Client> clients = 8;
+  map<string, AccessGrant> access_grants = 9;
+  map<string, ClaimDefinition> claim_definitions = 10;
+  map<string, TestPersona> test_personas = 11;
+  ConfigOptions options = 12;
+}
+
+message TrustedPassportIssuer {
+  string name = 1;
+  string issuer = 2;
+  string translate_using = 3;
+}
+
+message TrustedClaim {
+  string name = 1;
+  string source = 2;
+  repeated string claims = 3;
+}
+
+message Condition {
+  oneof key {
+    string claim = 1;
+    string data_use = 2;
+    string user_list = 3;
+  }
+  string is = 4;
+  oneof value {
+    string string_value = 5;
+    bool bool_value = 6;
+    double num_value = 7;
+  }
+  repeated string from = 8;
+  repeated Condition all_true = 9;
+  repeated Condition any_true = 10;
+}
+
+message Rule {
+  string name = 1;
+  Condition allow = 2;
+  Condition disallow = 3;
+}
+
+message PolicyBasis {
+  string name = 1;
+  string type = 2;
+  repeated string clauses = 3;
+}
+
+message View {
+  string name = 1;
+  string action = 2;
+  map<string,string> interfaces = 3;
+  repeated string content_types = 4;
+  repeated string grants = 5;
+  repeated string add_rules = 6;
+  repeated string clients = 7;
+  AccessGrant grant_params = 8;
+  repeated PolicyBasis policy_basis = 9;
+  map<string,string> ui = 10;
+}
+
+message Resource {
+  string name = 1;
+  string state = 2;
+  map<string,View> views = 3;
+  repeated string rules = 4;
+  repeated string clients = 5;
+  repeated string grants = 6;
+  string ttl = 7;
+  map<string,AccessGrant> grant_params = 8;
+  map<string,string> ui = 9;
+}
+
+message Client {
+  string name = 1;
+  string client_id = 2;
+  repeated string actions = 3;
+}
+
+message AccessGrant {
+  string name = 1;
+  string action = 2;
+  repeated string roles = 3;
+  repeated string scopes = 4;
+  string namespace = 5;
+}
+
+message Action {
+  string name = 1;
+  string desc = 2;
+}
+
+message ConfigOptions {
+  message GCP {
+    repeated string key_cycle = 1;
+  }
+  bool regexp_conditions = 1;
+  bool config_read_only = 2;
+  GCP gcp = 3;
+}
+
+message ClaimDefinition {
+  string name = 1;
+  string type = 2;
+  string display_as = 3;
+  bool pii = 4;
+}
+
+message ViewList {
+  repeated string views = 1;
+}
+
+message TestPersona {
+  string name = 1;
+  map<string, string> id_token = 2;
+  map<string, ViewList> resources = 3;
+  string state = 4;
+}
+
+message HistoryEntry {
+  int64 revision = 1;
+  string user = 2;
+  double commit_time = 3;
+  string path = 4;
+  string query = 5;
+  string desc = 6;
+  string method = 7;
+  string change_type = 8;
+  string original_value = 9;
+  string change_request = 10;
+}
+
+message History {
+  repeated HistoryEntry history = 1;
+  string next_page_token = 2;
+}
+
+///////////////////////////////////////////////////
+
+message GetResourcesRequest {
+  string filter = 1;
+  string include = 2;
+}
+
+message GetResourcesResponse {
+  repeated Resource resources = 1;
+}
+
+message GetResourceRequest {
+  string return = 1;
+  string data_use = 2;
+  int32 ttl = 3;
+}
+
+message GetResourceResponse {
+  string name = 1;
+  View view = 2;
+  string account = 3;
+  string token = 4;
+}
+
+message GetTestResultsRequest {
+}
+
+message GetTestResultsResponse {
+  message TestResult {
+    string name = 1;
+    string result = 2;
+    map<string,ViewList> resources = 3;
+    string error = 4;
+  }
+
+  string version = 1;
+  int64 revision = 2;
+  double timestamp = 3;
+  map<string, TestPersona> personas = 4;
+  repeated TestResult test_results = 5;
+  ConfigApply apply = 6;
+  int32 executed = 7;
+  int32 passed = 8;
+  string error = 9;
+}
+
+message ClientSecretRequest {
+}
+
+message ClientSecretResponse {
+  string secret = 1;
+}
+
+message ActionsRequest {
+}
+
+message ActionsResponse {
+  message ActionDesc {
+    string platform = 1;
+    string desc = 2;
+    string display_as = 3;
+  }
+  map<string, ActionDesc> actions = 1;
+}
+
+////////////////////////////////////////////////
+
+message ConfigApply {
+  message PersonaApply {
+    map<string,ViewList> add_resources = 1;
+    map<string,ViewList> remove_resources = 2;
+  }
+
+  int64 revision = 1;
+  map<string, PersonaApply> test_personas = 2;
+  bool dry_run = 3;
+}
+
+// ConfigResponse is a common response message across all config changes
+message ConfigResponse {
+}
+
+////////////////////////////////////////////////
+
+message ConfigRequest {
+  DamConfig item = 1;
+  ConfigApply apply = 2;
+}
+
+message ConfigResourceRequest {
+  Resource item = 1;
+  ConfigApply apply = 2;
+}
+
+message ConfigTrustedPassportIssuerRequest {
+  TrustedPassportIssuer item = 1;
+  ConfigApply apply = 2;
+}
+
+message ConfigTrustedClaimRequest {
+  TrustedClaim item = 1;
+  ConfigApply apply = 2;
+}
+
+message ConfigRuleRequest {
+  Rule item = 1;
+  ConfigApply apply = 2;
+}
+
+message ConfigOptionsRequest {
+  ConfigOptions item = 1;
+  ConfigApply apply = 2;
+}
+
+message ConfigClaimDefinitionRequest {
+  ClaimDefinition item = 1;
+  ConfigApply apply = 2;
+}
+
+message ConfigAccessGrantRequest {
+  AccessGrant item = 1;
+  ConfigApply apply = 2;
+}
