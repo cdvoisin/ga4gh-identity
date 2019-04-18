@@ -18,13 +18,17 @@ syntax = "proto3";
 // end points to receive requests and returns responses using these messages.
 package ic.v1;
 
+import "common/models/common.proto";
+
+option go_package = "github.com/googlegenomics/ga4gh-identity/ic/api/v1";
+
 message IcConfig {
   string version = 1;
   int64 revision = 2;
   double commit_time = 3;
   map<string, IdentityProvider> identity_providers = 4;
   map<string, Client> clients = 5;
-  map<string, AccountTag> account_tags = 6;
+  map<string, common.models.AccountTag> account_tags = 6;
   ConfigOptions options = 7;
 }
 
@@ -42,11 +46,6 @@ message IdentityProvider {
 message Client {
   string client_id = 1;
   repeated string redirect_uris = 2;
-  map<string, string> ui = 3;
-}
-
-message AccountTag {
-  string category = 1;
   map<string, string> ui = 3;
 }
 
@@ -71,15 +70,21 @@ message ConfigOptions {
   string access_token_ttl = 7;
   string refresh_token_ttl = 8;
   string claim_ttl_cap = 9;
-  map<string,Descriptor> computed_descriptors = 10 [json_name="descriptors"];
+  map<string, Descriptor> computed_descriptors = 10 [json_name = "descriptors"];
 }
 
 message IcSecrets {
   string version = 1;
   int64 revision = 2;
   double commit_time = 3;
-  map<string,string> client_secrets = 4;
-  map<string,string> id_provider_secrets = 5;
+  map<string, string> client_secrets = 4;
+  map<string, string> id_provider_secrets = 5;
+
+  message TokenKeys {
+    string private_key = 1;
+    string public_key = 2;
+  }
+  map<string, TokenKeys> token_keys = 6;
 }
 
 message ReadOnlyConfig {
@@ -87,8 +92,7 @@ message ReadOnlyConfig {
   string dex_port = 2;
 }
 
-message Realm {
-}
+message Realm {}
 
 ///////////////////////////////////////////////////
 
@@ -99,7 +103,7 @@ message Account {
   repeated ConnectedAccount connected_accounts = 4;
   string state = 5;
   string owner = 6;
-  map<string,string> ui = 7;
+  map<string, string> ui = 7;
 }
 
 message AccountProperties {
@@ -129,9 +133,10 @@ message ConnectedAccount {
   double refreshed = 4;
   int64 revision = 5;
   int64 link_revision = 6;
-  map<string,AccountClaimList> claims = 7;
+  map<string, AccountClaimList> claims = 7;
   repeated string tags = 8;
-  IdentityProvider computed_identity_provider = 9 [json_name="identityProvider"];
+  IdentityProvider computed_identity_provider = 9
+      [json_name = "identityProvider"];
 }
 
 message AccountClaimList {
@@ -139,11 +144,16 @@ message AccountClaimList {
 }
 
 message AccountClaim {
+  message Condition {
+    repeated string value = 1;
+    repeated string source = 2;
+    repeated string by = 3;
+  }
   string value = 1;
   string source = 2;
-  double issued_at = 3;
-  double expiry = 4;
-  string scope = 5;
+  double asserted = 3;
+  double expires = 4;
+  map<string, Condition> condition = 5;
   string by = 6;
 }
 
@@ -161,8 +171,7 @@ message ConfigModification {
   bool dry_run = 3;
 }
 
-message GetInfoRequest {
-}
+message GetInfoRequest {}
 
 message GetInfoResponse {
   string name = 1;
@@ -175,29 +184,26 @@ message RealmRequest {
   Realm item = 1;
 }
 
-message RealmResponse {
-}
+message RealmResponse {}
 
-message GetIdentityProvidersRequest {
-}
+message GetIdentityProvidersRequest {}
 
 message GetIdentityProvidersResponse {
-  map<string,IdentityProvider> identity_providers = 1;
+  map<string, IdentityProvider> identity_providers = 1;
 }
 
-message GetTokenRequest {
-}
+message GetTokenRequest {}
 
 message GetTokenResponse {
   message Info {
     string name = 1;
     string email = 2;
   }
-  string access_token = 1 [json_name="access_token"];
-  string token_type = 2 [json_name="token_type"];
-  int32 expires_in = 3 [json_name="expires_in"];
-  string refresh_token = 4 [json_name="refresh_token"];
-  string id_token = 5 [json_name="id_token"];
+  string access_token = 1 [json_name = "access_token"];
+  string token_type = 2 [json_name = "token_type"];
+  int32 expires_in = 3 [json_name = "expires_in"];
+  string refresh_token = 4 [json_name = "refresh_token"];
+  string id_token = 5 [json_name = "id_token"];
   string scope = 6;
   string uid = 7;
   Info info = 8;
@@ -205,12 +211,12 @@ message GetTokenResponse {
 
 message ClientRequest {
   Client item = 1;
-  string client_secret = 2 [json_name="client_secret"];
+  string client_secret = 2 [json_name = "client_secret"];
 }
 
 message ClientResponse {
   Client client = 1;
-  string client_secret = 2 [json_name="client_secret"];
+  string client_secret = 2 [json_name = "client_secret"];
 }
 
 message ConfigRequest {
@@ -218,32 +224,28 @@ message ConfigRequest {
   ConfigModification modification = 2;
 }
 
-message ConfigResponse {
-}
+message ConfigResponse {}
 
 message ConfigIdentityProviderRequest {
   IdentityProvider item = 1;
   ConfigModification modification = 2;
 }
 
-message ConfigIdProviderResponse {
-}
+message ConfigIdProviderResponse {}
 
 message ConfigClientRequest {
   Client item = 1;
   ConfigModification modification = 2;
 }
 
-message ConfigClientResponse {
-}
+message ConfigClientResponse {}
 
 message ConfigOptionsRequest {
   ConfigOptions item = 1;
   ConfigModification modification = 2;
 }
 
-message ConfigOptionsResponse {
-}
+message ConfigOptionsResponse {}
 
 message AccountRequest {
   Account item = 1;
@@ -263,8 +265,7 @@ message AccountSubjectResponse {
   ConnectedAccount item = 1;
 }
 
-message ClientSecretRequest {
-}
+message ClientSecretRequest {}
 
 message ClientSecretResponse {
   string secret = 1;
@@ -278,26 +279,13 @@ message LoginPageProviders {
     string url = 2;
     map<string, string> ui = 3;
   }
-  map<string,ProviderEntry> idps = 1;
-  map<string,ProviderEntry> personas = 2;
+  map<string, ProviderEntry> idps = 1;
+  map<string, ProviderEntry> personas = 2;
 }
 
 message GetPersonasResponse {
   message Meta {
     repeated string claim_names = 1;
   }
-  map<string,Meta> personas = 1;
+  map<string, Meta> personas = 1;
 }
-
-message Permissions {
-  message PermissionUser {
-    map<string,int64> roles = 1;
-    repeated string tags = 2;
-  }
-  string version = 1;
-  int64 revision = 2;
-  double commit_time = 3;
-  map<string,PermissionUser> users = 4;
-}
-
-
