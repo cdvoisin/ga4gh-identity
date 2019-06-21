@@ -67,7 +67,6 @@ message Policy {
   Condition allow = 1;
   Condition disallow = 2;
   map<string, string> ui = 3;
-  string rule = 4;
 }
 
 message PolicyBasis {
@@ -156,11 +155,6 @@ message ConfigOptions {
 }
 
 message ClaimDefinition {
-  message ValueDescriptor {
-    string value = 1;
-    map<string, string> ui = 2;
-  }
-  map<string, ValueDescriptor> value_descriptors = 1;
   map<string, string> ui = 2;
 }
 
@@ -178,8 +172,8 @@ message TestPersona {
     string claim_name = 1;
     string source = 2;
     string value = 3;
-    double asserted = 4;
-    double expires = 5;
+    string asserted_duration = 4;
+    string expires_duration = 5;
     map<string, Condition> condition = 6;
     string by = 7;
   }
